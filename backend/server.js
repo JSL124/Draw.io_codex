@@ -1,10 +1,10 @@
-import dotenv from "dotenv";
 import express from "express";
 
+import { loadBackendEnv } from "./env.js";
 import { createDiagram } from "./mcpClient.js";
 import { generateDrawioXml } from "./openai.js";
 
-dotenv.config();
+loadBackendEnv();
 
 const app = express();
 const port = Number(process.env.PORT || 4000);

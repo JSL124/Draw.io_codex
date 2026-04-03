@@ -1,29 +1,30 @@
+import { deflateRawSync } from "zlib";
+
+function compressDrawioXml(xml) {
+  const encodedXml = encodeURIComponent(xml);
+  const compressed = deflateRawSync(Buffer.from(encodedXml, "utf8"));
+
+  return compressed.toString("base64");
+}
+
 export async function createDiagram(xml) {
-  const baseUrl = process.env.DRAWIO_MCP_BASE_URL || "http://localhost:3000";
-  const response = await fetch(`${baseUrl}/create_diagram`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ xml })
-  });
-
-  const rawBody = await response.text();
-  let parsedBody = rawBody;
-
-  try {
-    parsedBody = JSON.parse(rawBody);
-  } catch {
-    // Keep raw text when MCP does not return JSON.
-  }
-
-  if (!response.ok) {
-    const error = new Error(`drawio-mcp request failed with status ${response.status}.`);
+  if (!xml || typeof xml !== "string") {
+    const error = new Error("Cannot create a draw.io link without XML content.");
     error.stage = "mcp";
-    error.status = response.status;
-    error.details = parsedBody;
     throw error;
   }
 
-  return parsedBody;
+  const editorBaseUrl = process.env.DRAWIO_EDITOR_URL || "https://app.diagrams.net/";
+  const payload = {
+    type: "xml",
+    compressed: true,
+    data: compressDrawioXml(xml)
+  };
+  const createHash = encodeURIComponent(JSON.stringify(payload));
+
+  return {
+    type: "drawio_link",
+    editorUrl: `${editorBaseUrl}?pv=0&grid=1#create=${createHash}`,
+    source: "local-url-generator"
+  };
 }
